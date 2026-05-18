@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务区智能预警与指挥调度系统</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #035DCF;
+            --primary-light: #33BBFF;
+            --primary-dark: #17346E;
+            --accent-orange: #F5A31F;
+            --accent-red: #E62C3C;
+            --accent-green: #10B981;
+            --accent-purple: #8B5CF6;
+            --bg-dark: #0A1628;
+            --bg-card: rgba(23, 52, 110, 0.6);
+            --bg-card-light: rgba(51, 187, 255, 0.15);
+            --text: #E6F3FF;
+            --text-muted: #99BBFF;
+            --border: rgba(51, 187, 255, 0.3);
+            --glow: rgba(51, 187, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #0D2137 50%, #0A1628 100%);
+            min-height: 100vh;
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* 大屏容器 */
+        .dashboard {
+            width: 100%;
+            min-height: 100vh;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            grid-template-rows: auto 1fr auto;
+            gap: 16px;
+        }
+
+        /* 顶部标题栏 */
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(90deg, var(--bg-card), transparent, var(--bg-card));
+            padding: 16px 24px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--border);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-title h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        .header-title .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.green { background: var(--accent-green); }
+        .status-dot.orange { background: var(--accent-orange); }
+        .status-dot.red { background: var(--accent-red); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .datetime {
+            font-size: 14px;
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-light);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .badge {
+            padding: 3px 8px;
+            background: var(--accent-orange);
+            color: white;
+            border-radius: 8px;
+            font-size: 10px;
+        }
+
+        /* 左侧面板 - 多维数据输入 */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .data-input-card {
+            background: var(--bg-card-light);
+        }
+
+        .data-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .data-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .data-value.highlight {
+            color: var(--accent-orange);
+        }
+
+        .data-value.green {
+            color: var(--accent-green);
+        }
+
+        .data-value.red {
+            color: var(--accent-red);
+        }
+
+        /* 天气图标 */
+        .weather-icon {
+            font-size: 20px;
+        }
+
+        /* 实时客流卡片 */
+        .realtime-card .客流数字 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        .客流单位 {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .客流趋势 {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .trend-item {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .trend-label {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .trend-value {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* 中间主面板 */
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 预警状态条 */
+        .alert-bar {
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-red));
+            padding: 12px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: alertPulse 2s infinite;
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(229, 44, 60, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(229, 44, 60, 0.8); }
+        }
+
+        .alert-bar.normal {
+            background: linear-gradient(90deg, var(--accent-green), #059669);
+            animation: none;
+        }
+
+        .alert-icon {
+            font-size: 24px;
+        }
+
+        .alert-text {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .alert-time {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* 预测图表区域 */
+        .prediction-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-light);
+        }
+
+        .chart-badge {
+            padding: 4px 10px;
+            background: var(--primary);
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .chart-container {
+            height: 200px;
+            position: relative;
+        }
+
+        /* 智能建议区域 */
+        .ai-suggestion-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .suggestion-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .suggestion-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .suggestion-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .suggestion-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .suggestion-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* 排班表格 */
+        .schedule-table {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .schedule-row {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: var(--bg-card-light);
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        .schedule-row.highlight {
+            background: rgba(245, 163, 31, 0.2);
+            border: 1px solid var(--accent-orange);
+        }
+
+        .schedule-time {
+            width: 60px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-light);
+        }
+
+        .schedule-role {
+            width: 80px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .schedule-count {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .schedule-status {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+        }
+
+        .schedule-status.auto {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .schedule-status.warning {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        /* 应急预案 */
+        .emergency-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            margin-top: 12px;
+        }
+
+        .emergency-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .emergency-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-red);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .emergency-level {
+            padding: 4px 12px;
+            background: var(--accent-red);
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .emergency-level.orange {
+            background: var(--accent-orange);
+        }
+
+        .emergency-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .emergency-item {
+            background: var(--bg-card-light);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .emergency-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .emergency-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .emergency-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 4px;
+        }
+
+        .emergency-action {
+            font-size: 10px;
+            color: var(--accent-green);
+            margin-top: 4px;
+        }
+
+        /* 右侧面板 */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* AI分析结果 */
+        .ai-analysis {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-card-light));
+        }
+
+        .analysis-item {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .analysis-item:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .analysis-content {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .analysis-content .highlight {
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        /* 成本对比 */
+        .cost-card .cost-comparison {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .cost-box {
+            flex: 1;
+            padding: 12px;
+            background: var(--bg-card-light);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .cost-box.before {
+            border-left: 3px solid var(--accent-red);
+        }
+
+        .cost-box.after {
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .cost-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .cost-value {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        .cost-box.before .cost-value {
+            color: var(--accent-red);
+        }
+
+        .cost-box.after .cost-value {
+            color: var(--accent-green);
+        }
+
+        .cost-saving {
+            text-align: center;
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(16, 185, 129, 0.2);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--accent-green);
+        }
+
+        /* 底部控制栏 */
+        .footer {
+            grid-column: 1 / -1;
+            background: var(--bg-card);
+            padding: 14px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--border);
+        }
+
+        .footer-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .control-btn.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        .control-btn.warning {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .control-btn.danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--glow);
+        }
+
+        .footer-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .info-item {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .info-item span {
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        /* 动态效果 */
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 演示按钮 */
+        .demo-btn-fixed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-red));
+            color: white;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 4px 20px rgba(245, 163, 31, 0.4);
+            transition: all 0.2s;
+        }
+
+        .demo-btn-fixed:hover {
+            transform: scale(1.05);
+        }
+
+        /* 数字滚动动画 */
+        .number-scroll {
+            display: inline-block;
+            animation: numberScroll 0.5s ease;
+        }
+
+        @keyframes numberScroll {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-card-light);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-light), var(--accent-green));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-red));
+        }
+    </style>
+</head>
+<body>
+    <!-- 演示控制按钮 -->
+    <button class="demo-btn-fixed" onclick="startDemo()">▶ 启动智能调度演示</button>
+
+    <div class="dashboard">
+        <!-- 顶部标题栏 -->
+        <div class="header">
+            <div class="header-title">
+                <h1>🚨 服务区智能预警与指挥调度系统</h1>
+                <span class="subtitle">大模型驱动的客流预测与自动调度</span>
+            </div>
+            <div class="header-status">
+                <div class="status-item">
+                    <div class="status-dot" id="systemDot"></div>
+                    <span class="status-label">系统状态</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot orange" id="alertDot"></div>
+                    <span class="status-label">预警等级</span>
+                </div>
+                <div class="datetime" id="datetime">2025-04-21 14:35</div>
+            </div>
+        </div>
+
+        <!-- 左侧面板 - 多维数据输入 -->
+        <div class="left-panel">
+            <!-- 多维数据融合 -->
+            <div class="card data-input-card">
+                <div class="card-title">
+                    📊 多维数据融合输入
+                    <span class="badge">实时</span>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">📅 节假日类型</div>
+                    <div class="data-value highlight">清明假期</div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">🌤️ 天气状况</div>
+                    <div class="data-value">
+                        <span class="weather-icon">☀️</span>
+                        晴 · 28°C
+                    </div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">🎉 周边活动</div>
+                    <div class="data-value highlight">苗寨文化节</div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">📈 历史客流基准</div>
+                    <div class="data-value">12,580人/日</div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">🚗 门架实时流量</div>
+                    <div class="data-value green" id="gateFlow">+18.5%</div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">⏱️ 时间系数</div>
+                    <div class="data-value">节假日×1.8</div>
+                </div>
+            </div>
+
+            <!-- 实时客流 -->
+            <div class="card realtime-card">
+                <div class="card-title">👥 当前客流状态</div>
+                
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                    <span class="客流数字" id="currentFlow">3,256</span>
+                    <span class="客流单位">人次</span>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="flowProgress" style="width:65%"></div>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">承载率 <span id="loadRate">65%</span></div>
+                
+                <div class="客流趋势">
+                    <div class="trend-item">
+                        <div class="trend-label">较昨日</div>
+                        <div class="trend-value green" id="vsYesterday">+32%</div>
+                    </div>
+                    <div class="trend-item">
+                        <div class="trend-label">较上周</div>
+                        <div class="trend-value highlight" id="vsLastWeek">+85%</div>
+                    </div>
+                    <div class="trend-item">
+                        <div class="trend-label">高峰预测</div>
+                        <div class="trend-value" id="peakTime">16:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预测参数 -->
+            <div class="card">
+                <div class="card-title">⚙️ 预测模型参数</div>
+                
+                <div class="data-item">
+                    <div class="data-label">预测窗口</div>
+                    <div class="data-value">24h / 30m / 15m</div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">模型版本</div>
+                    <div class="data-value">GPT-调度V3.2</div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">置信度</div>
+                    <div class="data-value green">94.5%</div>
+                </div>
+                
+                <div class="data-item">
+                    <div class="data-label">更新频率</div>
+                    <div class="data-value">每5分钟</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间主面板 -->
+        <div class="main-panel">
+            <!-- 预警状态条 -->
+            <div class="alert-bar" id="alertBar">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="alert-icon">⚠️</span>
+                    <div>
+                        <div class="alert-text" id="alertText">客流预警：预计16:00达到高峰，建议启动二级预案</div>
+                        <div class="alert-time">预警触发时间：14:30 | 有效期：至18:00</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:28px;font-weight:700;" id="alertLevel">二级</span>
+                    <span style="font-size:12px;">预警</span>
+                </div>
+            </div>
+
+            <!-- 预测图表 -->
+            <div class="prediction-section">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">📈 24小时客流预测曲线</div>
+                        <span class="chart-badge">置信度94%</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chart24h"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">⏱️ 短时预测（15/30分钟）</div>
+                        <span class="chart-badge">高频更新</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="chartShort"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI智能建议 -->
+            <div class="ai-suggestion-section">
+                <!-- 人员排班建议 -->
+                <div class="suggestion-card">
+                    <div class="suggestion-header">
+                        <div class="suggestion-icon">📋</div>
+                        <div>
+                            <div class="suggestion-title">自动人员排班建议</div>
+                            <div class="suggestion-subtitle">基于客流预测动态调整</div>
+                        </div>
+                    </div>
+                    
+                    <div class="schedule-table" id="scheduleTable">
+                        <div class="schedule-row highlight">
+                            <div class="schedule-time">16:00</div>
+                            <div class="schedule-role">高峰时段</div>
+                            <div class="schedule-count">增派 <span style="color:var(--accent-orange)">+8人</span></div>
+                            <div class="schedule-status auto">AI建议</div>
+                        </div>
+                        <div class="schedule-row">
+                            <div class="schedule-time">14-16时</div>
+                            <div class="schedule-role">服务区</div>
+                            <div class="schedule-count">12人值班</div>
+                            <div class="schedule-status auto">已排定</div>
+                        </div>
+                        <div class="schedule-row">
+                            <div class="schedule-time">16-18时</div>
+                            <div class="schedule-role">停车场</div>
+                            <div class="schedule-count">6人引导</div>
+                            <div class="schedule-status warning">待确认</div>
+                        </div>
+                        <div class="schedule-row">
+                            <div class="schedule-time">18-20时</div>
+                            <div class="schedule-role">餐饮区</div>
+                            <div class="schedule-count">10人服务</div>
+                            <div class="schedule-status auto">已排定</div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:10px;">
+                        💡 AI建议：16:00高峰时段增派8人至入口引导，预计节省人力成本15%
+                    </div>
+                </div>
+
+                <!-- 应急预案 -->
+                <div class="suggestion-card">
+                    <div class="suggestion-header">
+                        <div class="suggestion-icon">🚨</div>
+                        <div>
+                            <div class="suggestion-title">应急预案自动生成</div>
+                            <div class="suggestion-subtitle">人员·专家·物资智能调度</div>
+                        </div>
+                    </div>
+                    
+                    <div class="emergency-grid">
+                        <div class="emergency-item">
+                            <div class="emergency-icon">👷</div>
+                            <div class="emergency-label">应急人员</div>
+                            <div class="emergency-value" id="emergencyStaff">15人</div>
+                            <div class="emergency-action">已通知待命</div>
+                        </div>
+                        <div class="emergency-item">
+                            <div class="emergency-icon">👨‍⚕️</div>
+                            <div class="emergency-label">医疗专家</div>
+                            <div class="emergency-value">2组</div>
+                            <div class="emergency-action">15分钟到场</div>
+                        </div>
+                        <div class="emergency-item">
+                            <div class="emergency-icon">📦</div>
+                            <div class="emergency-label">物资储备</div>
+                            <div class="emergency-value">充足</div>
+                            <div class="emergency-action">已盘点</div>
+                        </div>
+                        <div class="emergency-item">
+                            <div class="emergency-icon">🚗</div>
+                            <div class="emergency-label">引导车辆</div>
+                            <div class="emergency-value">3辆</div>
+                            <div class="emergency-action">待命状态</div>
+                        </div>
+                        <div class="emergency-item">
+                            <div class="emergency-icon">📢</div>
+                            <div class="emergency-label">广播设备</div>
+                            <div class="emergency-value">6套</div>
+                            <div class="emergency-action">已启用</div>
+                        </div>
+                        <div class="emergency-item">
+                            <div class="emergency-icon">🆘</div>
+                            <div class="emergency-label">救援通道</div>
+                            <div class="emergency-value">畅通</div>
+                            <div class="emergency-action">已规划</div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size:12px;color:var(--accent-green);margin-top:10px;font-weight:600;">
+                        ✓ 预案已自动下发至相关人员，响应时间缩短60%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <div class="right-panel">
+            <!-- AI分析结论 -->
+            <div class="card ai-analysis">
+                <div class="card-title">
+                    🧠 AI大模型分析结论
+                    <span class="badge">智能</span>
+                </div>
+                
+                <div class="analysis-item">
+                    <div class="analysis-title">客流驱动因素</div>
+                    <div class="analysis-content">
+                        <span class="highlight">节假日效应(×1.8)</span> + 天气晴好 + 苗寨文化节叠加，预计客流峰值达<span class="highlight">8,500人次</span>
+                    </div>
+                </div>
+                
+                <div class="analysis-item">
+                    <div class="analysis-title">高峰时段预测</div>
+                    <div class="analysis-content">
+                        16:00-18:00为<span class="highlight">核心高峰</span>，建议14:30启动预案，提前90分钟部署
+                    </div>
+                </div>
+                
+                <div class="analysis-item">
+                    <div class="analysis-title">风险点识别</div>
+                    <div class="analysis-content">
+                        停车场饱和风险<span class="highlight" style="color:var(--accent-red)">高</span>，入口拥堵风险<span class="highlight" style="color:var(--accent-orange)">中</span>
+                    </div>
+                </div>
+                
+                <div class="analysis-item">
+                    <div class="analysis-title">优化建议</div>
+                    <div class="analysis-content">
+                        动态排班可<span class="highlight" style="color:var(--accent-green)">节省人力成本18%</span>，预案自动化响应时间缩短<span class="highlight" style="color:var(--accent-green)">60%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 成本对比 -->
+            <div class="card cost-card">
+                <div class="card-title">💰 人力成本对比分析</div>
+                
+                <div class="cost-comparison">
+                    <div class="cost-box before">
+                        <div class="cost-label">传统排班</div>
+                        <div class="cost-value">¥28,500</div>
+                        <div style="font-size:10px;color:var(--text-muted);">日均人力成本</div>
+                    </div>
+                    <div class="cost-box after">
+                        <div class="cost-label">AI智能排班</div>
+                        <div class="cost-value" id="aiCost">¥23,370</div>
+                        <div style="font-size:10px;color:var(--text-muted);">日均人力成本</div>
+                    </div>
+                </div>
+                
+                <div class="cost-saving">
+                    📉 月度节省成本：<span style="font-weight:700;">¥153,900</span> (降幅18%)
+                </div>
+                
+                <div style="margin-top:12px;padding:10px;background:var(--bg-card-light);border-radius:8px;">
+                    <div style="font-size:12px;color:var(--text-muted);">成本优化维度</div>
+                    <div style="display:flex;justify-content:space-between;margin-top:8px;">
+                        <div style="text-align:center;">
+                            <div style="font-size:14px;font-weight:700;color:var(--primary-light);">-15%</div>
+                            <div style="font-size:10px;color:var(--text-muted);">人员冗余</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-size:14px;font-weight:700;color:var(--primary-light);">-8%</div>
+                            <div style="font-size:10px;color:var(--text-muted);">加班费用</div>
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-size:14px;font-weight:700;color:var(--primary-light);">-60%</div>
+                            <div style="font-size:10px;color:var(--text-muted);">响应时间</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统日志 -->
+            <div class="card">
+                <div class="card-title">📝 系统调度日志</div>
+                
+                <div id="logList" style="font-size:11px;color:var(--text-muted);max-height:180px;overflow-y:auto;">
+                    <div style="padding:6px 0;border-bottom:1px solid var(--border);">[14:30] 预警触发：客流预测超阈值</div>
+                    <div style="padding:6px 0;border-bottom:1px solid var(--border);">[14:31] AI分析：启动二级预案</div>
+                    <div style="padding:6px 0;border-bottom:1px solid var(--border);">[14:32] 排班调整：增派8人待命</div>
+                    <div style="padding:6px 0;border-bottom:1px solid var(--border);">[14:33] 物资盘点：应急物资充足</div>
+                    <div style="padding:6px 0;">[14:35] 预案下发：相关人员已通知</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div class="footer">
+            <div class="footer-controls">
+                <button class="control-btn primary" onclick="refreshData()">🔄 刷新预测</button>
+                <button class="control-btn warning" onclick="adjustPlan()">⚙️ 调整预案</button>
+                <button class="control-btn danger" onclick="emergencyMode()">🚨 紧急模式</button>
+            </div>
+            <div class="footer-info">
+                <div class="info-item">模型更新：<span>实时</span></div>
+                <div class="info-item">数据源：<span>6个</span></div>
+                <div class="info-item">响应延迟：<span>&lt;30秒</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 图表配置
+        const chartConfig = {
+            fontColor: '#E6F3FF',
+            gridColor: 'rgba(51, 187, 255, 0.2)',
+            primaryColor: '#33BBFF',
+            warningColor: '#F5A31F',
+            dangerColor: '#E62C3C',
+            greenColor: '#10B981'
+        };
+
+        // 初始化24小时预测图表
+        const ctx24h = document.getElementById('chart24h').getContext('2d');
+        const chart24h = new Chart(ctx24h, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '04:00', '08:00', '12:00', '14:00', '16:00', '18:00', '20:00', '24:00'],
+                datasets: [{
+                    label: '预测客流',
+                    data: [500, 800, 2500, 4500, 6500, 8500, 6000, 3500, 800],
+                    borderColor: chartConfig.primaryColor,
+                    backgroundColor: 'rgba(51, 187, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: chartConfig.primaryColor
+                }, {
+                    label: '历史基准',
+                    data: [300, 500, 1500, 3000, 4000, 5000, 4000, 2000, 500],
+                    borderColor: chartConfig.gridColor,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0
+                }, {
+                    label: '警戒线',
+                    data: [7000, 7000, 7000, 7000, 7000, 7000, 7000, 7000, 7000],
+                    borderColor: chartConfig.dangerColor,
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: chartConfig.fontColor,
+                            font: { size: 11 }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: chartConfig.gridColor },
+                        ticks: { color: chartConfig.fontColor, font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { color: chartConfig.gridColor },
+                        ticks: { color: chartConfig.fontColor, font: { size: 10 } }
+                    }
+                }
+            }
+        });
+
+        // 初始化短时预测图表
+        const ctxShort = document.getElementById('chartShort').getContext('2d');
+        const chartShort = new Chart(ctxShort, {
+            type: 'bar',
+            data: {
+                labels: ['14:45', '15:00', '15:15', '15:30', '15:45', '16:00'],
+                datasets: [{
+                    label: '15分钟预测',
+                    data: [3800, 4200, 4800, 5500, 6200, 7500],
+                    backgroundColor: [
+                        chartConfig.greenColor,
+                        chartConfig.greenColor,
+                        chartConfig.warningColor,
+                        chartConfig.warningColor,
+                        chartConfig.warningColor,
+                        chartConfig.dangerColor
+                    ],
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: chartConfig.fontColor,
+                            font: { size: 11 }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: chartConfig.fontColor, font: { size: 10 } }
+                    },
+                    y: {
+                        grid: { color: chartConfig.gridColor },
+                        ticks: { color: chartConfig.fontColor, font: { size: 10 } }
+                    }
+                }
+            }
+        });
+
+        // 更新时间
+        function updateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('zh-CN');
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('datetime').textContent = `${dateStr} ${timeStr}`;
+        }
+        setInterval(updateTime, 1000);
+
+        // 模拟数据更新
+        let currentFlow = 3256;
+        let flowDirection = 1;
+
+        function updateFlow() {
+            currentFlow += Math.floor(Math.random() * 50) * flowDirection;
+            if (currentFlow > 4000) flowDirection = -1;
+            if (currentFlow < 3000) flowDirection = 1;
+            
+            document.getElementById('currentFlow').textContent = currentFlow;
+            document.getElementById('currentFlow').classList.add('number-scroll');
+            setTimeout(() => {
+                document.getElementById('currentFlow').classList.remove('number-scroll');
+            }, 500);
+            
+            const loadRate = Math.min(100, Math.round(currentFlow / 50));
+            document.getElementById('loadRate').textContent = loadRate + '%';
+            document.getElementById('flowProgress').style.width = loadRate + '%';
+            
+            if (loadRate > 80) {
+                document.getElementById('flowProgress').classList.add('warning');
+            } else {
+                document.getElementById('flowProgress').classList.remove('warning');
+            }
+        }
+        setInterval(updateFlow, 2000);
+
+        // 添加日志
+        function addLog(message) {
+            const logList = document.getElementById('logList');
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            const newLog = document.createElement('div');
+            newLog.style.cssText = 'padding:6px 0;border-bottom:1px solid var(--border);animation:fadeIn 0.3s ease;';
+            newLog.textContent = `[${timeStr}] ${message}`;
+            logList.insertBefore(newLog, logList.firstChild);
+        }
+
+        // 演示流程
+        async function startDemo() {
+            // 步骤1：数据输入阶段
+            document.getElementById('systemDot').className = 'status-dot green';
+            addLog('多维数据接入：历史客流、天气、节假日、活动');
+            await delay(2000);
+            
+            // 步骤2：预测分析
+            addLog('AI模型启动预测：24h/30m/15m窗口');
+            await delay(1500);
+            
+            // 更新图表数据
+            chart24h.data.datasets[0].data = [500, 800, 2500, 4500, 7000, 9200, 7500, 4000, 800];
+            chart24h.update('active');
+            addLog('预测结果：16:00客流峰值9200人次');
+            await delay(2000);
+            
+            // 步骤3：预警触发
+            document.getElementById('systemDot').className = 'status-dot orange';
+            document.getElementById('alertDot').className = 'status-dot red';
+            document.getElementById('alertText').textContent = '客流预警：预计16:00达到高峰峰值9200人，启动一级预案';
+            document.getElementById('alertLevel').textContent = '一级';
+            document.getElementById('alertBar').style.animation = 'alertPulse 1s infinite';
+            addLog('预警触发：客流超阈值，启动一级预案');
+            await delay(2000);
+            
+            // 步骤4：排班调整
+            const scheduleTable = document.getElementById('scheduleTable');
+            scheduleTable.innerHTML = `
+                <div class="schedule-row highlight">
+                    <div class="schedule-time">16:00</div>
+                    <div class="schedule-role">高峰时段</div>
+                    <div class="schedule-count">增派 <span style="color:var(--accent-red)">+12人</span></div>
+                    <div class="schedule-status auto">AI建议</div>
+                </div>
+                <div class="schedule-row highlight">
+                    <div class="schedule-time">15:30</div>
+                    <div class="schedule-role">预备时段</div>
+                    <div class="schedule-count">增派 <span style="color:var(--accent-orange)">+6人</span></div>
+                    <div class="schedule-status auto">AI建议</div>
+                </div>
+                <div class="schedule-row">
+                    <div class="schedule-time">14-16时</div>
+                    <div class="schedule-role">服务区</div>
+                    <div class="schedule-count">15人值班</div>
+                    <div class="schedule-status auto">已调整</div>
+                </div>
+                <div class="schedule-row">
+                    <div class="schedule-time">16-18时</div>
+                    <div class="schedule-role">停车场</div>
+                    <div class="schedule-count">10人引导</div>
+                    <div class="schedule-status auto">已调整</div>
+                </div>
+            `;
+            addLog('排班调整：高峰时段增派12人，预备时段增派6人');
+            await delay(1500);
+            
+            // 步骤5：应急预案生成
+            document.getElementById('emergencyStaff').textContent = '20人';
+            addLog('应急预案：调配应急人员20人，医疗专家2组');
+            await delay(1500);
+            
+            // 步骤6：成本计算
+            document.getElementById('aiCost').textContent = '¥21,200';
+            addLog('成本优化：动态排班节省人力成本¥7,300/日');
+            await delay(1500);
+            
+            // 完成
+            addLog('智能调度完成：预案已下发，响应时间缩短60%');
+            document.getElementById('systemDot').className = 'status-dot green';
+            
+            // 重置预警
+            setTimeout(() => {
+                document.getElementById('alertDot').className = 'status-dot orange';
+                document.getElementById('alertText').textContent = '客流预警：预计16:00达到高峰，建议启动二级预案';
+                document.getElementById('alertLevel').textContent = '二级';
+                document.getElementById('alertBar').style.animation = 'alertPulse 2s infinite';
+            }, 3000);
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 模拟刷新
+        function refreshData() {
+            addLog('刷新预测数据...');
+            chartShort.data.datasets[0].data = [4200, 4800, 5300, 6000, 6800, 8000];
+            chartShort.update('active');
+            addLog('短时预测更新完成');
+        }
+
+        function adjustPlan() {
+            addLog('手动调整预案：参数已更新');
+        }
+
+        function emergencyMode() {
+            document.getElementById('alertBar').style.background = 'linear-gradient(90deg, #E62C3C, #DC2626)';
+            document.getElementById('alertText').textContent = '紧急模式：全员待命，应急预案全面启动';
+            document.getElementById('alertLevel').textContent = '特级';
+            addLog('紧急模式启动：全员待命');
+        }
+
+        // 初始化
+        updateTime();
+        addLog('系统初始化完成');
+        addLog('多维数据接入成功');
+    </script>
+</body>
+</html>

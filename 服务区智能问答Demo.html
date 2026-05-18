@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务区智能助手 - Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #035DCF;
+            --primary-light: #33BBFF;
+            --primary-dark: #17346E;
+            --accent-orange: #F5A31F;
+            --accent-green: #10B981;
+            --accent-purple: #8B5CF6;
+            --bg: #F0F2F5;
+            --card-bg: #FFFFFF;
+            --text: #566280;
+            --text-dark: #17346E;
+            --border: #E6F3FF;
+            --shadow: rgba(23, 52, 110, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #E6F3FF 0%, #F0F2F5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .phone-container {
+            width: 420px;
+            height: 880px;
+            background: var(--bg);
+            border-radius: 44px;
+            box-shadow: 0 30px 60px var(--shadow);
+            position: relative;
+            overflow: hidden;
+            border: 11px solid #1a1a1a;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 125px;
+            height: 32px;
+            background: #1a1a1a;
+            border-radius: 0 0 18px 18px;
+            z-index: 100;
+        }
+
+        .status-bar {
+            height: 46px;
+            background: var(--primary-dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 22px;
+            color: white;
+            font-size: 13px;
+        }
+
+        /* APP头部 */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 12px 18px 16px;
+            color: white;
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        /* 当前位置条 */
+        .location-bar {
+            background: var(--card-bg);
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .loc-icon {
+            width: 34px;
+            height: 34px;
+            background: var(--primary-light);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loc-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .loc-info h3 {
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        .loc-info p {
+            font-size: 11px;
+            color: var(--text);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            height: 580px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 对话区域 */
+        .chat-area {
+            flex: 1;
+            padding: 14px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        /* 消息气泡 */
+        .message {
+            max-width: 95%;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .bubble {
+            padding: 12px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.user .bubble {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .bubble {
+            background: var(--card-bg);
+            color: var(--text-dark);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 3px 10px var(--shadow);
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .ai-avatar {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-avatar svg {
+            width: 15px;
+            height: 15px;
+            fill: white;
+        }
+
+        .ai-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* 路线选择按钮组 */
+        .route-btns {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .route-btn {
+            flex: 1;
+            padding: 10px 8px;
+            background: var(--border);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .route-btn:hover {
+            background: #CCE6FF;
+        }
+
+        .route-btn.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .route-btn .icon {
+            font-size: 20px;
+        }
+
+        .route-btn .label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-top: 4px;
+        }
+
+        .route-btn.active .label {
+            color: white;
+        }
+
+        .route-btn .sub {
+            font-size: 9px;
+            color: var(--text);
+        }
+
+        .route-btn.active .sub {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* 地图卡片 */
+        .map-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .map-header {
+            padding: 10px 14px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .map-badge {
+            padding: 4px 10px;
+            background: var(--accent-orange);
+            border-radius: 10px;
+            font-size: 10px;
+        }
+
+        .map-badge.green { background: var(--accent-green); }
+        .map-badge.purple { background: var(--accent-purple); }
+
+        .map-body {
+            height: 150px;
+            background: linear-gradient(180deg, #E6F3FF, #CCE6FF);
+        }
+
+        .map-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 路线信息 */
+        .route-info {
+            padding: 12px;
+        }
+
+        .route-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .route-stats {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: var(--border);
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-lbl {
+            font-size: 9px;
+            color: var(--text);
+        }
+
+        /* 服务区列表 */
+        .service-list {
+            margin-top: 10px;
+        }
+
+        .service-list-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .service-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .service-tag {
+            padding: 6px 10px;
+            background: var(--border);
+            border-radius: 8px;
+            font-size: 11px;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .service-tag:hover {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        .service-tag.highlight {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        /* 服务区详情面板 */
+        .detail-panel {
+            background: var(--card-bg);
+            border-radius: 12px;
+            margin: 12px 0;
+            overflow: hidden;
+            box-shadow: 0 4px 16px var(--shadow);
+        }
+
+        .detail-head {
+            padding: 12px 14px;
+            background: linear-gradient(135deg, #2d5a8c, #1a3a5c);
+            color: white;
+        }
+
+        .detail-title {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .detail-loc {
+            font-size: 10px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .detail-body {
+            padding: 12px;
+        }
+
+        .facility-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .fac-tag {
+            padding: 5px 10px;
+            background: var(--border);
+            border-radius: 6px;
+            font-size: 10px;
+            color: var(--text-dark);
+        }
+
+        .svc-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .svc-tag {
+            padding: 4px 8px;
+            background: var(--primary-light);
+            color: white;
+            border-radius: 5px;
+            font-size: 9px;
+        }
+
+        /* 景点卡片 */
+        .attraction-list {
+            margin-top: 10px;
+        }
+
+        .attr-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .attr-card {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: var(--border);
+            border-radius: 10px;
+            margin-bottom: 6px;
+        }
+
+        .attr-img {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .attr-info {
+            flex: 1;
+        }
+
+        .attr-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .attr-desc {
+            font-size: 10px;
+            color: var(--text);
+            margin-top: 3px;
+        }
+
+        .attr-meta {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .attr-tag {
+            padding: 3px 7px;
+            background: var(--accent-purple);
+            color: white;
+            border-radius: 4px;
+            font-size: 9px;
+        }
+
+        .attr-dist {
+            font-size: 9px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* 输入区域 */
+        .input-area {
+            background: var(--card-bg);
+            padding: 14px 16px;
+            border-top: 1px solid var(--border);
+            position: absolute;
+            bottom: 42px;
+            left: 0;
+            right: 0;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .input-box {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: var(--bg);
+            border-radius: 22px;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+        }
+
+        .input-box:focus-within {
+            border-color: var(--primary-light);
+        }
+
+        .input-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 13px;
+            color: var(--text-dark);
+            outline: none;
+        }
+
+        .input-box input::placeholder {
+            color: var(--text);
+        }
+
+        .func-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .voice-btn {
+            background: var(--bg);
+            border: 2px solid var(--border);
+        }
+
+        .voice-btn:hover {
+            background: var(--border);
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .func-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .voice-btn svg {
+            fill: var(--text);
+        }
+
+        .send-btn svg {
+            fill: white;
+        }
+
+        /* 快捷入口 */
+        .quick-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-btn {
+            flex: 1;
+            padding: 8px;
+            background: var(--border);
+            border-radius: 8px;
+            font-size: 11px;
+            color: var(--text-dark);
+            text-align: center;
+            cursor: pointer;
+            border: none;
+        }
+
+        .quick-btn:hover {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        /* 演示控制 */
+        .demo-control {
+            position: absolute;
+            top: 56px;
+            right: 16px;
+            z-index: 200;
+        }
+
+        .demo-btn {
+            padding: 8px 18px;
+            background: var(--accent-orange);
+            color: white;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .demo-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* 步骤提示 */
+        .step-tip {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(23, 52, 110, 0.9);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 14px;
+            font-size: 11px;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .step-tip.show {
+            opacity: 1;
+        }
+
+        .home-indicator {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 130px;
+            height: 5px;
+            background: #1a1a1a;
+            border-radius: 3px;
+        }
+
+        /* 加载动画 */
+        .typing-box {
+            display: flex;
+            gap: 4px;
+            padding: 10px 14px;
+            background: var(--card-bg);
+            border-radius: 12px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-light);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-container">
+        <div class="phone-notch"></div>
+        
+        <!-- 演示按钮 -->
+        <div class="demo-control">
+            <button class="demo-btn" onclick="startDemo()">▶ 开始演示</button>
+        </div>
+
+        <!-- 步骤提示 -->
+        <div class="step-tip" id="stepTip">演示步骤 1/3</div>
+
+        <div class="status-bar">
+            <span style="margin-left:45px;">14:35</span>
+            <span>5G</span>
+            <span>87%</span>
+        </div>
+
+        <!-- APP头部 -->
+        <div class="app-header">
+            <div class="app-title">🤖 服务区智能助手</div>
+            <div class="app-subtitle">语音/文字提问 · 路况设施景点查询</div>
+        </div>
+
+        <!-- 当前位置 -->
+        <div class="location-bar">
+            <div class="loc-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </div>
+            <div class="loc-info">
+                <h3>贵州高速服务区智能系统</h3>
+                <p>覆盖全省120+服务区 · 实时路况更新</p>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <div class="chat-area" id="chatArea">
+                <!-- 初始欢迎消息 -->
+                <div class="message ai">
+                    <div class="ai-header">
+                        <div class="ai-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                        </div>
+                        <span class="ai-name">智能助手</span>
+                    </div>
+                    <div class="bubble">
+                        您好！我是服务区智能助手 ✨<br><br>
+                        我可以为您解答：<br>
+                        🚗 <b>路径规划</b> — 三种推荐方式<br>
+                        🏢 <b>服务区设施</b> — 加油餐饮住宿<br>
+                        🏞️ <b>周边景点</b> — 精选游玩推荐<br><br>
+                        请点击上方<b>「开始演示」</b>按钮观看完整流程。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="input-area">
+            <div class="input-row">
+                <button class="func-btn voice-btn">
+                    <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                </button>
+                <div class="input-box">
+                    <input type="text" placeholder="语音或文字提问..." id="inputBox">
+                </div>
+                <button class="func-btn send-btn">
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+            <div class="quick-row">
+                <button class="quick-btn">🛣️ 路线</button>
+                <button class="quick-btn">🏢 设施</button>
+                <button class="quick-btn">🏞️ 景点</button>
+                <button class="quick-btn">🚦 路况</button>
+            </div>
+        </div>
+
+        <div class="home-indicator"></div>
+    </div>
+
+    <script>
+        const chatArea = document.getElementById('chatArea');
+        const inputBox = document.getElementById('inputBox');
+        const stepTip = document.getElementById('stepTip');
+
+        // 演示数据
+        const routeData = {
+            fastest: {
+                badge: '速度最快',
+                badgeClass: '',
+                name: '沪昆高速(G60) → 厦蓉高速(G76)',
+                dist: '180公里',
+                time: '2.5小时',
+                toll: '85元',
+                services: ['🛣️贵阳南', '⛽龙里', '🍜贵定', '🏞️都匀', '🅿️丹寨', '🏪凯里'],
+                tip: '路况良好，建议立即出发'
+            },
+            attractions: {
+                badge: '景区最多',
+                badgeClass: 'green',
+                name: '景区环线 → 黔东南精华游',
+                dist: '280公里',
+                time: '4小时',
+                toll: '130元',
+                services: ['🛣️贵阳北', '古镇青岩', '🌿龙里草原', '民族榕江', '温泉剑河', '龙舟台江'],
+                tip: '途经8景区，适合深度游玩'
+            },
+            scenic: {
+                badge: '景色最美',
+                badgeClass: 'purple',
+                name: '黔东南旅游专线 → 风景走廊',
+                dist: '220公里',
+                time: '3.5小时',
+                toll: '110元',
+                services: ['🛣️贵阳东', '🏔️雷山', '🏠西江苗寨', '鼓楼肇兴', '🌲黎平', '稻田从江'],
+                tip: '摄影爱好者首选，夜景绝美'
+            }
+        };
+
+        const serviceDetail = {
+            title: '都匀服务区',
+            loc: '沪昆高速K120 · 黔南州都匀市',
+            facilities: ['🚾卫生间', '⛽加油站', '🍜餐厅', '🅿️停车场', '🏪便利店', '🔋充电站'],
+            services: ['免费WiFi', '24小时热水', '母婴室', '无障碍设施', 'ATM', '医药箱']
+        };
+
+        const attractions = [
+            { icon: '🍵', name: '都匀茶文化园', desc: '贵州毛尖茶原产地', tags: ['茶文化', '品茗'], dist: '3km' },
+            { icon: '🏔️', name: '斗篷山风景区', desc: '原始森林·瀑布群', tags: ['自然', '徒步'], dist: '8km' }
+        ];
+
+        let isRunning = false;
+
+        function delay(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        function showStep(n) {
+            stepTip.textContent = `演示步骤 ${n}/3`;
+            stepTip.classList.add('show');
+            setTimeout(() => stepTip.classList.remove('show'), 2500);
+        }
+
+        function scrollToBottom() {
+            chatArea.scrollTop = chatArea.scrollHeight + 100;
+        }
+
+        // 逐字显示用户消息
+        async function showUserMsg(text) {
+            const msg = document.createElement('div');
+            msg.className = 'message user';
+            msg.innerHTML = '<div class="bubble"></div>';
+            chatArea.appendChild(msg);
+            
+            const bubble = msg.querySelector('.bubble');
+            for (let i = 0; i < text.length; i++) {
+                bubble.textContent += text[i];
+                await delay(60);
+            }
+            scrollToBottom();
+        }
+
+        // 显示加载动画
+        function showTyping() {
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.id = 'typingMsg';
+            msg.innerHTML = `
+                <div class="ai-header">
+                    <div class="ai-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                    </div>
+                    <span class="ai-name">智能助手</span>
+                </div>
+                <div class="typing-box">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatArea.appendChild(msg);
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            const t = document.getElementById('typingMsg');
+            if (t) t.remove();
+        }
+
+        // 步骤1：路线推荐+地图
+        async function step1() {
+            showStep(1);
+            
+            // 用户提问
+            await showUserMsg('从贵阳到黔东南走高速有哪几条路径推荐？');
+            await delay(1000);
+            
+            // AI思考
+            showTyping();
+            await delay(1500);
+            hideTyping();
+            
+            // AI回复：路线选择+地图
+            const route = routeData.fastest;
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.innerHTML = `
+                <div class="ai-header">
+                    <div class="ai-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                    </div>
+                    <span class="ai-name">智能助手</span>
+                </div>
+                <div class="bubble">
+                    为您查询到3种推荐路线：
+                    
+                    <div class="route-btns">
+                        <div class="route-btn active" onclick="changeRoute('fastest')">
+                            <div class="icon">⚡</div>
+                            <div class="label">速度最快</div>
+                            <div class="sub">2.5小时</div>
+                        </div>
+                        <div class="route-btn" onclick="changeRoute('attractions')">
+                            <div class="icon">🎯</div>
+                            <div class="label">景区最多</div>
+                            <div class="sub">途经8景区</div>
+                        </div>
+                        <div class="route-btn" onclick="changeRoute('scenic')">
+                            <div class="icon">🎨</div>
+                            <div class="label">景色最美</div>
+                            <div class="sub">风光线</div>
+                        </div>
+                    </div>
+                    
+                    <div class="map-card">
+                        <div class="map-header">
+                            <span>🗺️ 路线地图</span>
+                            <span class="map-badge" id="mapBadge">${route.badge}</span>
+                        </div>
+                        <div class="map-body">
+                            <svg class="map-svg" viewBox="0 0 380 150">
+                                <rect x="0" y="0" width="380" height="150" fill="#E6F3FF"/>
+                                <path d="M20 50 Q50 40 80 50" fill="none" stroke="#99BBFF" stroke-width="1.5"/>
+                                <path d="M180 40 Q210 30 240 40 Q270 30 300 40" fill="none" stroke="#99BBFF" stroke-width="1.5"/>
+                                <path d="M25 75 L355 75" fill="none" stroke="url(#roadGrad2)" stroke-width="4" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="roadGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#33BBFF"/>
+                                        <stop offset="100%" style="stop-color:#3377FF"/>
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="25" cy="75" r="8" fill="#17346E"/>
+                                <circle cx="25" cy="75" r="4" fill="#33BBFF"/>
+                                <text x="25" y="62" fill="#17346E" font-size="10" text-anchor="middle" font-weight="bold">贵阳</text>
+                                
+                                <circle cx="60" cy="75" r="5" fill="#33BBFF"/>
+                                <text x="60" y="88" fill="#566280" font-size="7" text-anchor="middle">贵阳南</text>
+                                
+                                <circle cx="100" cy="75" r="5" fill="#33BBFF"/>
+                                <text x="100" y="88" fill="#566280" font-size="7" text-anchor="middle">龙里</text>
+                                
+                                <circle cx="140" cy="75" r="5" fill="#33BBFF"/>
+                                <text x="140" y="88" fill="#566280" font-size="7" text-anchor="middle">贵定</text>
+                                
+                                <circle cx="180" cy="75" r="8" fill="#F5A31F"/>
+                                <circle cx="180" cy="75" r="4" fill="#FFFFFF"/>
+                                <text x="180" y="100" fill="#17346E" font-size="8" text-anchor="middle" font-weight="bold">都匀服务区</text>
+                                
+                                <circle cx="220" cy="75" r="5" fill="#33BBFF"/>
+                                <text x="220" y="88" fill="#566280" font-size="7" text-anchor="middle">丹寨</text>
+                                
+                                <circle cx="260" cy="75" r="5" fill="#33BBFF"/>
+                                <text x="260" y="88" fill="#566280" font-size="7" text-anchor="middle">凯里</text>
+                                
+                                <circle cx="355" cy="75" r="8" fill="#17346E"/>
+                                <circle cx="355" cy="75" r="4" fill="#10B981"/>
+                                <text x="355" y="62" fill="#17346E" font-size="10" text-anchor="middle" font-weight="bold">黔东南</text>
+                                
+                                <text x="190" y="48" fill="#035DCF" font-size="8" text-anchor="middle">180公里 · 约2.5小时</text>
+                                
+                                <path d="M35 75 L350 75" fill="none" stroke="#33BBFF" stroke-width="2" stroke-dasharray="5,3">
+                                    <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="0.8s" repeatCount="indefinite"/>
+                                </path>
+                            </svg>
+                        </div>
+                        <div class="route-info">
+                            <div class="route-title" id="routeTitle">${route.name}</div>
+                            <div class="route-stats">
+                                <div class="stat-item">
+                                    <div class="stat-val" id="statDist">${route.dist}</div>
+                                    <div class="stat-lbl">总里程</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-val" id="statTime">${route.time}</div>
+                                    <div class="stat-lbl">预计时间</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-val" id="statToll">${route.toll}</div>
+                                    <div class="stat-lbl">通行费</div>
+                                </div>
+                            </div>
+                            <div class="service-list">
+                                <div class="service-list-title">📍 途经服务区</div>
+                                <div class="service-row" id="serviceRow">
+                                    ${route.services.map((s, i) => `<div class="service-tag ${i===3?'highlight':''}">${s}</div>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size:12px;color:#566280;margin-top:8px;">💡 ${route.tip}，点击服务区查看详情</div>
+                </div>
+            `;
+            chatArea.appendChild(msg);
+            scrollToBottom();
+        }
+
+        // 步骤2：服务区详情
+        async function step2() {
+            showStep(2);
+            await delay(800);
+            
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.innerHTML = `
+                <div class="ai-header">
+                    <div class="ai-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                    </div>
+                    <span class="ai-name">智能助手</span>
+                </div>
+                <div class="bubble">
+                    为您展示<b>都匀服务区</b>详情：
+                    
+                    <div class="detail-panel">
+                        <div class="detail-head">
+                            <div class="detail-title">${serviceDetail.title}</div>
+                            <div class="detail-loc">📍 ${serviceDetail.loc}</div>
+                        </div>
+                        <div class="detail-body">
+                            <div class="facility-tags">
+                                ${serviceDetail.facilities.map(f => `<div class="fac-tag">${f}</div>`).join('')}
+                            </div>
+                            <div class="svc-tags">
+                                ${serviceDetail.services.map(s => `<div class="svc-tag">${s}</div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatArea.appendChild(msg);
+            scrollToBottom();
+        }
+
+        // 步骤3：景点推荐
+        async function step3() {
+            showStep(3);
+            await delay(800);
+            
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.innerHTML = `
+                <div class="ai-header">
+                    <div class="ai-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                    </div>
+                    <span class="ai-name">智能助手</span>
+                </div>
+                <div class="bubble">
+                    🏞️ 都匀服务区周边景点推荐：
+                    
+                    <div class="attraction-list">
+                        ${attractions.map(a => `
+                            <div class="attr-card">
+                                <div class="attr-img">${a.icon}</div>
+                                <div class="attr-info">
+                                    <div class="attr-name">${a.name}</div>
+                                    <div class="attr-desc">${a.desc}</div>
+                                    <div class="attr-meta">
+                                        ${a.tags.map(t => `<div class="attr-tag">${t}</div>`).join('')}
+                                        <div class="attr-dist">📍 ${a.dist}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="font-size:12px;color:#035DCF;margin-top:10px;font-weight:600;">
+                        ✅ 演示完成！点击上方「开始演示」可重新观看。
+                    </div>
+                </div>
+            `;
+            chatArea.appendChild(msg);
+            scrollToBottom();
+        }
+
+        // 演示主流程
+        async function startDemo() {
+            if (isRunning) return;
+            isRunning = true;
+            
+            // 清空并显示初始消息
+            chatArea.innerHTML = `
+                <div class="message ai">
+                    <div class="ai-header">
+                        <div class="ai-avatar">
+                            <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                        </div>
+                        <span class="ai-name">智能助手</span>
+                    </div>
+                    <div class="bubble">
+                        正在为您演示完整交互流程...
+                    </div>
+                </div>
+            `;
+            
+            await delay(1200);
+            
+            // 三步演示
+            await step1();
+            await delay(3500);
+            
+            await step2();
+            await delay(3500);
+            
+            await step3();
+            
+            isRunning = false;
+        }
+
+        // 切换路线类型
+        function changeRoute(type) {
+            const route = routeData[type];
+            
+            // 更新按钮状态
+            document.querySelectorAll('.route-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // 更新内容
+            document.getElementById('mapBadge').textContent = route.badge;
+            document.getElementById('mapBadge').className = 'map-badge ' + route.badgeClass;
+            document.getElementById('routeTitle').textContent = route.name;
+            document.getElementById('statDist').textContent = route.dist;
+            document.getElementById('statTime').textContent = route.time;
+            document.getElementById('statToll').textContent = route.toll;
+            document.getElementById('serviceRow').innerHTML = 
+                route.services.map((s, i) => `<div class="service-tag ${i===3?'highlight':''}">${s}</div>`).join('');
+        }
+    </script>
+</body>
+</html>

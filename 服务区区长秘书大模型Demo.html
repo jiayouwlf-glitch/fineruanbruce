@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>服务区区长秘书大模型 - 多悬浮窗演示</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a1628;
+      --bg-surface: #132238;
+      --bg-elevated: #1a3048;
+      --bg-overlay: rgba(10, 22, 40, 0.92);
+      --text-primary: #e8f0f8;
+      --text-secondary: #a8c0d8;
+      --text-muted: #6080a0;
+      --border-color: #2a4060;
+      --blue-400: #40a0e0;
+      --blue-600: #2080c0;
+      --teal-400: #60c0a0;
+      --teal-600: #40a080;
+      --green-400: #60c060;
+      --amber-400: #f0c040;
+      --purple-400: #a060e0;
+      --purple-600: #8040c0;
+      --red-400: #e06060;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* Background Pattern */
+    .bg-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(ellipse at 20% 30%, rgba(64,160,224,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(96,160,160,0.08) 0%, transparent 50%),
+        linear-gradient(180deg, var(--bg-primary) 0%, #0d1a30 100%);
+      z-index: 0;
+    }
+    
+    /* Navigation Bar */
+    .nav-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(19, 34, 56, 0.95);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .nav-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--blue-600), var(--teal-600));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: white;
+    }
+    
+    .nav-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .nav-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    .nav-timestamp {
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+      padding: 8px 16px;
+      border-radius: 8px;
+    }
+    
+    /* Floating Window Container */
+    .float-container {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Float Window */
+    .float-window {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      width: 1200px;
+      max-height: calc(100vh - 120px);
+      overflow: hidden;
+      box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(64, 160, 224, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+    
+    .float-window::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 24px;
+      right: 24px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--blue-400), var(--teal-400), var(--purple-400));
+    }
+    
+    /* Window Header */
+    .window-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-elevated);
+    }
+    
+    .window-title-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    
+    .window-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .window-icon.data {
+      background: linear-gradient(135deg, var(--blue-600), var(--teal-600));
+    }
+    
+    .window-icon.strategy {
+      background: linear-gradient(135deg, var(--purple-600), var(--blue-600));
+    }
+    
+    .window-icon.chat {
+      background: linear-gradient(135deg, var(--teal-600), var(--green-400));
+    }
+    
+    .window-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+    
+    .window-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .window-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    
+    .window-badge {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    
+    .badge-data {
+      background: rgba(64, 160, 224, 0.15);
+      color: var(--blue-400);
+    }
+    
+    .badge-strategy {
+      background: rgba(160, 96, 224, 0.15);
+      color: var(--purple-400);
+    }
+    
+    .badge-chat {
+      background: rgba(96, 160, 160, 0.15);
+      color: var(--teal-400);
+    }
+    
+    /* Window Content */
+    .window-content {
+      padding: 24px;
+      overflow-y: auto;
+      max-height: calc(100vh - 200px);
+    }
+    
+    /* Page 1: 经营数据 */
+    .page-hidden { display: none; }
+    .page-active { display: block; animation: fadeIn 0.3s ease; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .kpi-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle, var(--blue-400) 0%, transparent 70%);
+      opacity: 0.08;
+    }
+    
+    .kpi-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-top: 8px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    
+    .kpi-unit {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+    
+    .kpi-change {
+      font-size: 12px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .kpi-change.up { color: var(--green-400); }
+    .kpi-change.down { color: var(--red-400); }
+    .kpi-change.flat { color: var(--amber-400); }
+    
+    /* Charts */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .chart-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .chart-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    
+    .chart-tabs {
+      display: flex;
+      gap: 6px;
+    }
+    
+    .chart-tab {
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: transparent;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .chart-tab:hover {
+      background: var(--bg-surface);
+    }
+    
+    .chart-tab.active {
+      background: var(--blue-600);
+      color: white;
+      border-color: var(--blue-600);
+    }
+    
+    .chart-box {
+      height: 200px;
+    }
+    
+    /* Data Table */
+    .data-table-wrap {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .table-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .table-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn-sm {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-outline {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-outline:hover {
+      background: var(--bg-elevated);
+    }
+    
+    .btn-primary {
+      background: var(--blue-600);
+      color: white;
+      border: none;
+    }
+    
+    .btn-primary:hover {
+      background: var(--blue-400);
+    }
+    
+    .data-table {
+      width: 100%;
+    }
+    
+    .data-table th {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+    
+    .data-table td {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .data-table tr:last-child td { border-bottom: none; }
+    
+    .status-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    
+    .status-tag.normal {
+      background: rgba(96, 192, 96, 0.12);
+      color: var(--green-400);
+    }
+    
+    .status-tag.warning {
+      background: rgba(240, 192, 64, 0.12);
+      color: var(--amber-400);
+    }
+    
+    .status-tag.alert {
+      background: rgba(224, 96, 96, 0.12);
+      color: var(--red-400);
+    }
+    
+    /* Page 2: 经营策略 */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    
+    .strategy-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .strategy-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+    }
+    
+    .strategy-card.insight::before { background: var(--blue-400); }
+    .strategy-card.risk::before { background: var(--amber-400); }
+    .strategy-card.action::before { background: var(--teal-400); }
+    
+    .strategy-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    
+    .strategy-card.insight .strategy-icon {
+      background: rgba(64, 160, 224, 0.12);
+      color: var(--blue-400);
+    }
+    
+    .strategy-card.risk .strategy-icon {
+      background: rgba(240, 192, 64, 0.12);
+      color: var(--amber-400);
+    }
+    
+    .strategy-card.action .strategy-icon {
+      background: rgba(96, 160, 160, 0.12);
+      color: var(--teal-400);
+    }
+    
+    .strategy-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .strategy-card.insight .strategy-title { color: var(--blue-400); }
+    .strategy-card.risk .strategy-title { color: var(--amber-400); }
+    .strategy-card.action .strategy-title { color: var(--teal-400); }
+    
+    .strategy-list {
+      list-style: none;
+    }
+    
+    .strategy-list li {
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+      line-height: 1.6;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .strategy-list li:last-child { border-bottom: none; }
+    
+    .strategy-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-top: 6px;
+    }
+    
+    .strategy-card.insight .strategy-dot { background: var(--blue-400); }
+    .strategy-card.risk .strategy-dot { background: var(--amber-400); }
+    .strategy-card.action .strategy-dot { background: var(--teal-400); }
+    
+    /* AI Report */
+    .ai-report {
+      background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-surface) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+    
+    .ai-report-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    
+    .ai-report-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--purple-600), var(--teal-600));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .ai-report-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+    }
+    
+    .ai-report-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .ai-report-badge {
+      font-size: 11px;
+      background: rgba(96, 160, 160, 0.12);
+      color: var(--teal-400);
+      padding: 4px 10px;
+      border-radius: 12px;
+      margin-left: 12px;
+    }
+    
+    .ai-report-content {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+    
+    .ai-report-content strong {
+      color: var(--text-primary);
+    }
+    
+    /* Page 3: 智能问答 */
+    .chat-interface {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    .chat-messages {
+      height: 420px;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    
+    .chat-message {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 20px;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .chat-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .chat-avatar.user {
+      background: var(--blue-600);
+      color: white;
+    }
+    
+    .chat-avatar.ai {
+      background: linear-gradient(135deg, var(--purple-600), var(--teal-600));
+      color: white;
+    }
+    
+    .chat-bubble {
+      flex: 1;
+      background: var(--bg-surface);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    
+    .chat-bubble.ai {
+      background: linear-gradient(135deg, rgba(96,160,160,0.08) 0%, rgba(64,128,192,0.08) 100%);
+      border-left: 3px solid var(--teal-400);
+    }
+    
+    .chat-bubble strong { color: var(--text-primary); }
+    
+    .chat-input-area {
+      display: flex;
+      gap: 12px;
+      padding: 16px 20px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .chat-input {
+      flex: 1;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    .chat-input:focus {
+      border-color: var(--blue-400);
+    }
+    
+    .chat-input::placeholder {
+      color: var(--text-muted);
+    }
+    
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--blue-600), var(--teal-600));
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .send-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(64,160,224,0.3);
+    }
+    
+    .send-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+    
+    /* Quick Questions */
+    .quick-questions {
+      display: flex;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .quick-btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .quick-btn:hover {
+      background: var(--blue-600);
+      color: white;
+      border-color: var(--blue-600);
+    }
+    
+    /* Navigation Buttons */
+    .nav-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      padding: 20px;
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .nav-btn {
+      padding: 12px 32px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .nav-btn.next {
+      background: linear-gradient(135deg, var(--blue-600), var(--teal-600));
+      color: white;
+      border: none;
+    }
+    
+    .nav-btn.next:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(64,160,224,0.25);
+    }
+    
+    .nav-btn.prev {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+    
+    .nav-btn.prev:hover {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+    }
+    
+    .nav-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+    
+    /* Progress Indicator */
+    .progress-bar {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px 0;
+    }
+    
+    .progress-dot {
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-color);
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    
+    .progress-dot.active {
+      background: var(--blue-400);
+      width: 60px;
+    }
+    
+    .progress-dot.done {
+      background: var(--teal-400);
+    }
+    
+    /* Responsive */
+    @media (max-width: 1240px) {
+      .float-window { width: 95vw; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-grid { grid-template-columns: 1fr; }
+      .strategy-grid { grid-template-columns: 1fr; }
+    }
+    
+    @media (max-width: 768px) {
+      .nav-bar { padding: 0 16px; }
+      .float-container { top: 72px; }
+      .window-header { padding: 14px 16px; }
+      .window-content { padding: 16px; }
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-pattern"></div>
+  
+  <!-- Navigation Bar -->
+  <nav class="nav-bar">
+    <div class="nav-brand">
+      <div class="nav-logo">AI</div>
+      <div>
+        <div class="nav-title">服务区区长秘书大模型</div>
+        <div class="nav-subtitle">经营管理看板演示系统</div>
+      </div>
+    </div>
+    <div class="nav-timestamp">2026年4月21日 14:30 实时更新</div>
+  </nav>
+  
+  <!-- Progress Indicator -->
+  <div class="progress-bar">
+    <div class="progress-dot active" data-page="1" onclick="goToPage(1)"></div>
+    <div class="progress-dot" data-page="2" onclick="goToPage(2)"></div>
+    <div class="progress-dot" data-page="3" onclick="goToPage(3)"></div>
+  </div>
+  
+  <!-- Float Container -->
+  <div class="float-container">
+    <div class="float-window">
+      
+      <!-- Page 1: 经营数据 -->
+      <div id="page1" class="page-active">
+        <div class="window-header">
+          <div class="window-title-group">
+            <div class="window-icon data">
+              <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h2v-2H7v2zm0 4h2v-2H7v2zM7 7v2h2V7H7zm4 2v2h2v-2h-2zm0 4h2v-2h-2v2zm0 4h2v-2h-2v2zm0-8h2V7h-2v2zm4 0h2V7h-2v2zm0 4h2v-2h-2v2zm0 4h2v-2h-2v2zm0-8h2v-2h-2v2z"/></svg>
+            </div>
+            <div>
+              <div class="window-title">经营数据看板</div>
+              <div class="window-desc">实时监控核心经营指标与数据趋势</div>
+            </div>
+          </div>
+          <span class="window-badge badge-data">数据概览</span>
+        </div>
+        
+        <div class="window-content">
+          <!-- KPI Grid -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">今日营业收入</div>
+              <div class="kpi-value">186.5<span class="kpi-unit">万元</span></div>
+              <div class="kpi-change up">
+                <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2L10 8H2L6 2Z" fill="currentColor"/></svg>
+                较昨日 +12.3%
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">车流量</div>
+              <div class="kpi-value">8,432<span class="kpi-unit">辆</span></div>
+              <div class="kpi-change up">
+                <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2L10 8H2L6 2Z" fill="currentColor"/></svg>
+                较昨日 +5.8%
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">客流人数</div>
+              <div class="kpi-value">12,680<span class="kpi-unit">人次</span></div>
+              <div class="kpi-change flat">
+                <svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="3" fill="currentColor"/></svg>
+                与昨日持平
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">商户满意度</div>
+              <div class="kpi-value">94.6<span class="kpi-unit">%</span></div>
+              <div class="kpi-change up">
+                <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 2L10 8H2L6 2Z" fill="currentColor"/></svg>
+                较上月 +2.1%
+              </div>
+            </div>
+          </div>
+          
+          <!-- Charts -->
+          <div class="charts-grid">
+            <div class="chart-card">
+              <div class="chart-header">
+                <div class="chart-title">近7日营收趋势</div>
+                <div class="chart-tabs">
+                  <button class="chart-tab active">营收</button>
+                  <button class="chart-tab">客流</button>
+                  <button class="chart-tab">车流</button>
+                </div>
+              </div>
+              <div class="chart-box">
+                <canvas id="trendChart"></canvas>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-header">
+                <div class="chart-title">收入构成分布</div>
+              </div>
+              <div class="chart-box">
+                <canvas id="pieChart"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Data Table -->
+          <div class="data-table-wrap">
+            <div class="table-header">
+              <div class="table-title">商户经营详情</div>
+              <div class="table-actions">
+                <button class="btn-sm btn-outline">导出</button>
+                <button class="btn-sm btn-primary">全部</button>
+              </div>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>商户</th>
+                  <th>类型</th>
+                  <th>今日营收</th>
+                  <th>环比</th>
+                  <th>满意度</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>肯德基</td>
+                  <td>快餐餐饮</td>
+                  <td>28.5万</td>
+                  <td class="kpi-change up">+15.2%</td>
+                  <td>96.8%</td>
+                  <td><span class="status-tag normal">正常</span></td>
+                </tr>
+                <tr>
+                  <td>中石化加油站</td>
+                  <td>油品销售</td>
+                  <td>32.0万</td>
+                  <td class="kpi-change flat">+0.5%</td>
+                  <td>94.2%</td>
+                  <td><span class="status-tag warning">库存预警</span></td>
+                </tr>
+                <tr>
+                  <td>便利店A</td>
+                  <td>零售百货</td>
+                  <td>12.8万</td>
+                  <td class="kpi-change up">+8.6%</td>
+                  <td>92.5%</td>
+                  <td><span class="status-tag normal">正常</span></td>
+                </tr>
+                <tr>
+                  <td>快餐商户B</td>
+                  <td>中式快餐</td>
+                  <td>18.2万</td>
+                  <td class="kpi-change down">-3.2%</td>
+                  <td>85.4%</td>
+                  <td><span class="status-tag alert">投诉增多</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="nav-buttons">
+          <button class="nav-btn next" onclick="goToPage(2)">
+            <span>查看经营策略</span>
+            <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Page 2: 经营策略 -->
+      <div id="page2" class="page-hidden">
+        <div class="window-header">
+          <div class="window-title-group">
+            <div class="window-icon strategy">
+              <svg viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.85l-.85.6V16h-4v-2.55l-.85-.6A4.997 4.997 0 007 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.99-1.22 3.72-2.85 4.85z"/></svg>
+            </div>
+            <div>
+              <div class="window-title">经营策略分析</div>
+              <div class="window-desc">大模型智能洞察、风险预警与行动建议</div>
+            </div>
+          </div>
+          <span class="window-badge badge-strategy">AI分析报告</span>
+        </div>
+        
+        <div class="window-content">
+          <!-- Strategy Cards -->
+          <div class="strategy-grid">
+            <div class="strategy-card insight">
+              <div class="strategy-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+              </div>
+              <div class="strategy-title">经营洞察</div>
+              <ul class="strategy-list">
+                <li><span class="strategy-dot"></span>本周营收较上周增长8.2%，餐饮板块贡献显著</li>
+                <li><span class="strategy-dot"></span>加油站业务稳定，日均销售额维持32万元水平</li>
+                <li><span class="strategy-dot"></span>便利店夜间销售额占比提升至15%，建议延长营业时间</li>
+                <li><span class="strategy-dot"></span>停车场周转率下降，需优化车位管理策略</li>
+              </ul>
+            </div>
+            
+            <div class="strategy-card risk">
+              <div class="strategy-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3l7.53 13H4.47L12 5zm1 4h-2v4h2V9zm0 6h-2v2h2v-2z" fill="currentColor"/></svg>
+              </div>
+              <div class="strategy-title">风险预警</div>
+              <ul class="strategy-list">
+                <li><span class="strategy-dot"></span>快餐区商户A投诉率上升，建议加强巡查监管</li>
+                <li><span class="strategy-dot"></span>周末高峰期保洁响应延迟，影响客户体验</li>
+                <li><span class="strategy-dot"></span>柴油库存预警：低于安全线20%，需立即补货</li>
+                <li><span class="strategy-dot"></span>3家商户合同月底到期，需提前续约沟通</li>
+              </ul>
+            </div>
+            
+            <div class="strategy-card action">
+              <div class="strategy-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/></svg>
+              </div>
+              <div class="strategy-title">行动建议</div>
+              <ul class="strategy-list">
+                <li><span class="strategy-dot"></span>立即安排柴油补货，建议增加5吨储备</li>
+                <li><span class="strategy-dot"></span>优化保洁排班，周末高峰增加2名机动人员</li>
+                <li><span class="strategy-dot"></span>启动商户续约专项，本周完成3家合同签订</li>
+                <li><span class="strategy-dot"></span>开展快餐区服务质量专项检查</li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- AI Report -->
+          <div class="ai-report">
+            <div class="ai-report-header">
+              <div class="ai-report-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.1c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.43z"/></svg>
+              </div>
+              <div class="ai-report-title">综合分析结论</div>
+              <span class="ai-report-badge">实时生成</span>
+            </div>
+            <div class="ai-report-content">
+              基于本周经营数据的综合分析，建议优先处理<strong>柴油库存预警</strong>和<strong>快餐商户投诉</strong>两项紧急事项。中期策略应聚焦于<strong>便利店夜间业务拓展</strong>和<strong>商户续约专项工作</strong>。预计采取措施后，下周营收有望突破<strong>200万元</strong>目标，商户满意度可提升至<strong>96%</strong>以上。建议今日召开经营分析会，部署具体执行方案。
+            </div>
+          </div>
+        </div>
+        
+        <div class="nav-buttons">
+          <button class="nav-btn prev" onclick="goToPage(1)">
+            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+            <span>返回经营数据</span>
+          </button>
+          <button class="nav-btn next" onclick="goToPage(3)">
+            <span>进入智能问答</span>
+            <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Page 3: 智能问答 -->
+      <div id="page3" class="page-hidden">
+        <div class="window-header">
+          <div class="window-title-group">
+            <div class="window-icon chat">
+              <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+            </div>
+            <div>
+              <div class="window-title">智能问答助手</div>
+              <div class="window-desc">基于经营数据的智能对话与决策支持</div>
+            </div>
+          </div>
+          <span class="window-badge badge-chat">对话交互</span>
+        </div>
+        
+        <div class="window-content">
+          <div class="chat-interface">
+            <div class="chat-messages" id="chatMessages">
+              <div class="chat-message">
+                <div class="chat-avatar user">区</div>
+                <div class="chat-bubble">请分析一下本周营收下降的主要原因</div>
+              </div>
+              <div class="chat-message">
+                <div class="chat-avatar ai">AI</div>
+                <div class="chat-bubble ai">根据数据分析，本周营收下降主要受以下因素影响：<br><br>1. <strong>天气因素</strong>：周三暴雨导致车流量减少约15%<br>2. <strong>节假日效应</strong>：上周清明假期后客流自然回落<br>3. <strong>商户因素</strong>：快餐商户B投诉事件导致部分顾客分流<br><br>建议采取应对措施：加强恶劣天气预案、开展促销活动吸引客流、督促商户整改提升服务质量。</div>
+              </div>
+              <div class="chat-message">
+                <div class="chat-avatar user">区</div>
+                <div class="chat-bubble">柴油库存预警需要多长时间补货？</div>
+              </div>
+              <div class="chat-message">
+                <div class="chat-avatar ai">AI</div>
+                <div class="chat-bubble ai">根据当前库存数据和历史消耗规律分析：<br><br>• 当前柴油库存：<strong>8.2吨</strong>（安全线10吨）<br>• 日均消耗量：<strong>3.5吨</strong><br>• 预计可维持：<strong>约2.3天</strong><br><br>补货建议：<br>1. 立即联系供应商下单，常规配送周期为<strong>24-48小时</strong><br>2. 建议本次补货<strong>15吨</strong>，预留安全缓冲<br>3. 可启动应急补货通道，缩短配送时间至<strong>12小时</strong></div>
+              </div>
+            </div>
+            
+            <div class="quick-questions">
+              <button class="quick-btn" onclick="quickAsk('本周各商户营收排名')">本周营收排名</button>
+              <button class="quick-btn" onclick="quickAsk('如何提升停车场周转率')">停车场优化</button>
+              <button class="quick-btn" onclick="quickAsk('商户续约流程建议')">续约流程</button>
+              <button class="quick-btn" onclick="quickAsk('下周营收预测')">营收预测</button>
+            </div>
+            
+            <div class="chat-input-area">
+              <input type="text" class="chat-input" placeholder="输入您的问题，大模型将智能分析并给出建议..." id="chatInput">
+              <button class="send-btn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="nav-buttons">
+          <button class="nav-btn prev" onclick="goToPage(2)">
+            <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+            <span>返回经营策略</span>
+          </button>
+          <button class="nav-btn next" onclick="showComplete()">
+            <span>完成演示</span>
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+          </button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <script>
+    let currentPage = 1;
+    
+    function goToPage(page) {
+      // Hide all pages
+      document.querySelectorAll('[id^="page"]').forEach(p => {
+        p.classList.remove('page-active');
+        p.classList.add('page-hidden');
+      });
+      
+      // Show target page
+      document.getElementById('page' + page).classList.remove('page-hidden');
+      document.getElementById('page' + page).classList.add('page-active');
+      
+      // Update progress dots
+      document.querySelectorAll('.progress-dot').forEach(dot => {
+        dot.classList.remove('active', 'done');
+        if (parseInt(dot.dataset.page) < page) {
+          dot.classList.add('done');
+        } else if (parseInt(dot.dataset.page) === page) {
+          dot.classList.add('active');
+        }
+      });
+      
+      currentPage = page;
+      
+      // Initialize charts on page 1
+      if (page === 1) {
+        initCharts();
+      }
+    }
+    
+    function showComplete() {
+      alert('演示流程已完成！感谢您体验服务区区长秘书大模型系统。');
+    }
+    
+    // Initialize Charts
+    let trendChart, pieChart;
+    
+    function initCharts() {
+      if (trendChart) return; // Already initialized
+      
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      const pieCtx = document.getElementById('pieChart').getContext('2d');
+      
+      trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+          datasets: [{
+            label: '营收(万元)',
+            data: [165, 172, 148, 180, 195, 186, 186.5],
+            borderColor: '#40a0e0',
+            backgroundColor: 'rgba(64, 160, 224, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#40a0e0',
+            pointBorderColor: '#fff',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: 'rgba(42, 64, 96, 0.5)' }, ticks: { color: '#6080a0' } },
+            y: { grid: { color: 'rgba(42, 64, 96, 0.5)' }, ticks: { color: '#6080a0' } }
+          }
+        }
+      });
+      
+      pieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['餐饮', '加油', '零售', '停车', '其他'],
+          datasets: [{
+            data: [35, 30, 20, 10, 5],
+            backgroundColor: ['#40a0e0', '#60c0a0', '#a060e0', '#f0c040', '#6080a0'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#a8c0d8', padding: 10, font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+    
+    // Chat functionality
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const messages = document.getElementById('chatMessages');
+      const text = input.value.trim();
+      
+      if (!text) return;
+      
+      addMessage('user', text);
+      input.value = '';
+      
+      // Simulate AI response
+      setTimeout(() => {
+        addMessage('ai', generateAIResponse(text));
+      }, 800);
+    }
+    
+    function addMessage(type, content) {
+      const messages = document.getElementById('chatMessages');
+      const msg = document.createElement('div');
+      msg.className = 'chat-message';
+      
+      if (type === 'user') {
+        msg.innerHTML = `
+          <div class="chat-avatar user">区</div>
+          <div class="chat-bubble">${content}</div>
+        `;
+      } else {
+        msg.innerHTML = `
+          <div class="chat-avatar ai">AI</div>
+          <div class="chat-bubble ai">${content}</div>
+        `;
+      }
+      
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+    }
+    
+    function generateAIResponse(question) {
+      const responses = {
+        '本周各商户营收排名': '本周商户营收排名如下：<br><br><strong>1. 中石化加油站</strong> - 32.0万元（占比17.1%）<br><strong>2. 肯德基</strong> - 28.5万元（占比15.2%）<br><strong>3. 快餐商户B</strong> - 18.2万元（占比9.7%）<br><strong>4. 便利店A</strong> - 12.8万元（占比6.9%）<br><br>建议重点关注排名靠后的商户，分析其经营瓶颈并提供针对性支持。',
+        '如何提升停车场周转率': '停车场周转率优化建议：<br><br>1. <strong>动态定价策略</strong>：高峰时段适当上调停车费率，激励短时停车<br>2. <strong>车位引导系统</strong>：升级智能车位引导，减少寻找车位时间<br>3. <strong>分流引导</strong>：设置临时停车区，引导短停车辆分流<br>4. <strong>预约停车</strong>：推出预约停车服务，优化车位预期管理<br><br>预计实施后周转率可提升<strong>25-30%</strong>。',
+        '商户续约流程建议': '商户续约专项建议：<br><br>• <strong>时间规划</strong>：提前30天启动续约沟通，预留谈判缓冲<br>• <strong>评估机制</strong>：建立商户绩效评分体系，综合考量营收、满意度、合规性<br>• <strong>合同优化</strong>：新合同建议加入服务质量条款和动态租金机制<br>• <strong>备选方案</strong>：同步储备优质替代商户资源，降低谈判风险<br><br>本周建议优先处理<strong>3家到期商户</strong>的续约工作。',
+        '下周营收预测': '基于历史数据和当前趋势分析，下周营收预测：<br><br>• <strong>乐观预估</strong>：210-220万元（促销活动+天气晴好）<br>• <strong>中性预估</strong>：195-205万元（正常经营状态）<br><br>关键影响因素：<br>1. 柴油补货到位后加油业务恢复<br>2. 快餐商户整改效果显现<br>3. 周末促销活动吸引力<br><br>建议设定<strong>200万元</strong>为周目标，制定配套提升计划。'
+      };
+      
+      return responses[question] || '正在分析您的问题...基于当前经营数据和行业规律，我将为您提供专业的决策建议。请稍候，或尝试使用快捷问题按钮获取具体分析。';
+    }
+    
+    function quickAsk(question) {
+      document.getElementById('chatInput').value = question;
+      sendMessage();
+    }
+    
+    // Enter key for chat
+    document.getElementById('chatInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') sendMessage();
+    });
+    
+    // Tab switching for charts
+    document.querySelectorAll('.chart-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+    
+    // Initialize on load
+    initCharts();
+  </script>
+</body>
+</html>
