@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高速公路服务区智能化系统导航</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            color: #fff;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            font-size: 16px;
+            color: #a0a0a0;
+        }
+        
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        
+        .system-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .system-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #4a9eff;
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(74, 158, 255, 0.2);
+        }
+        
+        .system-card .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        
+        .qa-icon { background: linear-gradient(135deg, #4a9eff, #0066cc); }
+        .secretary-icon { background: linear-gradient(135deg, #ff6b6b, #cc3333); }
+        .performance-icon { background: linear-gradient(135deg, #4ecdc4, #2aaa9e); }
+        .warning-icon { background: linear-gradient(135deg, #ffd93d, #cc9900); }
+        
+        .system-card h3 {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        
+        .system-card p {
+            font-size: 14px;
+            color: #888;
+            line-height: 1.6;
+        }
+        
+        .system-card .features {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .system-card .feature-tag {
+            background: rgba(74, 158, 255, 0.2);
+            color: #4a9eff;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .docker-badge {
+            background: linear-gradient(135deg, #0db7ed, #099);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+        
+        .docker-badge span {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚗 高速公路服务区智能化系统</h1>
+        <p>基于大模型的公共服务智能化解决方案演示平台</p>
+    </div>
+    
+    <div class="systems-grid">
+        <a href="服务区智能问答Demo.html" class="system-card">
+            <div class="icon qa-icon">🤖</div>
+            <h3>智能问答系统</h3>
+            <p>模拟贵阳至黔东南路径导航场景，提供实时路况、服务区信息、停车引导等智能问答服务</p>
+            <div class="features">
+                <span class="feature-tag">路径规划</span>
+                <span class="feature-tag">停车查询</span>
+                <span class="feature-tag">实时数据</span>
+            </div>
+        </a>
+        
+        <a href="服务区区长秘书大模型Demo.html" class="system-card">
+            <div class="icon secretary-icon">📋</div>
+            <h3>区长秘书系统</h3>
+            <p>服务区管理助手，协助区长处理日常事务、公文流转、会议安排等行政工作</p>
+            <div class="features">
+                <span class="feature-tag">日程管理</span>
+                <span class="feature-tag">公文处理</span>
+                <span class="feature-tag">决策辅助</span>
+            </div>
+        </a>
+        
+        <a href="服务区绩效考核大模型Demo.html" class="system-card">
+            <div class="icon performance-icon">📊</div>
+            <h3>绩效考核系统</h3>
+            <p>基于大模型的服务区绩效数据分析与考核评估，支持多维度指标评价</p>
+            <div class="features">
+                <span class="feature-tag">数据分析</span>
+                <span class="feature-tag">考核评估</span>
+                <span class="feature-tag">可视化</span>
+            </div>
+        </a>
+        
+        <a href="服务区预警指挥调度Demo.html" class="system-card">
+            <div class="icon warning-icon">🚨</div>
+            <h3>预警指挥调度系统</h3>
+            <p>节假日应急调度、突发事件预警、资源调配指挥等智能化管理场景</p>
+            <div class="features">
+                <span class="feature-tag">应急调度</span>
+                <span class="feature-tag">预警响应</span>
+                <span class="feature-tag">资源调配</span>
+            </div>
+        </a>
+    </div>
+    
+    <div class="footer">
+        <div class="docker-badge">
+            <span>🐳 Docker部署</span>
+            <span>端口: 8080</span>
+        </div>
+        <p style="margin-top: 15px;">帆软软件 · 高速公路服务区智能化解决方案</p>
+    </div>
+</body>
+</html>

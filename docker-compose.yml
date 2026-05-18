@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  highway-service-area-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: highway-demo
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    networks:
+      - demo-network
+
+networks:
+  demo-network:
+    driver: bridge
+
+# 使用说明：
+# 1. 构建镜像: docker-compose build
+# 2. 启动服务: docker-compose up -d
+# 3. 访问地址:
+#    - 智能问答系统: http://localhost:8080/
+#    - 区长秘书系统: http://localhost:8080/secretary
+#    - 绩效考核系统: http://localhost:8080/performance
+#    - 预警指挥系统: http://localhost:8080/warning
+# 4. 停止服务: docker-compose down
