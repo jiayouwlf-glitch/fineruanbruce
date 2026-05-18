@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高速公路服务区智能问答系统 V2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #035DCF;
+            --primary-light: #33BBFF;
+            --primary-dark: #17346E;
+            --accent-orange: #F5A31F;
+            --accent-green: #10B981;
+            --accent-red: #EF4444;
+            --accent-purple: #8B5CF6;
+            --bg: #F0F2F5;
+            --card-bg: #FFFFFF;
+            --text: #566280;
+            --text-dark: #17346E;
+            --border: #E6F3FF;
+            --shadow: rgba(23, 52, 110, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #E6F3FF 0%, #F0F2F5 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        /* 页面标题 */
+        .page-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .page-title h1 {
+            font-size: 28px;
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+        .page-title p {
+            color: var(--text);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        /* 主布局 */
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        /* 左侧场景面板 */
+        .scene-panel {
+            width: 280px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .scene-panel h2 {
+            font-size: 16px;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .scene-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .scene-item {
+            padding: 14px 16px;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 2px solid transparent;
+        }
+
+        .scene-item:hover {
+            background: #CCE6FF;
+            transform: translateX(4px);
+        }
+
+        .scene-item.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border-color: var(--primary-dark);
+        }
+
+        .scene-icon {
+            font-size: 24px;
+        }
+
+        .scene-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .scene-info p {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        /* 中间对话区 */
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px var(--shadow);
+            max-width: 600px;
+        }
+
+        /* 头部 */
+        .chat-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-light), white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-avatar svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--primary-dark);
+        }
+
+        .chat-title h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .chat-title p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .demo-btn {
+            padding: 10px 20px;
+            background: var(--accent-orange);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .demo-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(245, 163, 31, 0.4);
+        }
+
+        /* 对话区域 */
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 400px;
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* 消息样式 */
+        .message {
+            max-width: 90%;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .bubble {
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message.user .bubble {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.ai .bubble {
+            background: var(--bg);
+            color: var(--text-dark);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .ai-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+
+        .ai-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* 快捷问题 */
+        .quick-questions {
+            padding: 16px 20px;
+            background: var(--border);
+            border-radius: 0 0 16px 16px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .q-btn {
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--primary-dark);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+        }
+
+        .q-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* 右侧数据面板 */
+        .data-panel {
+            width: 320px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 40px var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .data-panel h2 {
+            font-size: 16px;
+            color: var(--primary-dark);
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        /* KPI卡片 */
+        .kpi-card {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .kpi-title {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .kpi-change {
+            font-size: 12px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .kpi-change.up { color: var(--accent-green); }
+        .kpi-change.down { color: var(--accent-red); }
+
+        /* 统计列表 */
+        .stat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .stat-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        /* 服务状态 */
+        .service-status {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.green { background: var(--accent-green); }
+        .status-dot.yellow { background: var(--accent-orange); }
+        .status-dot.red { background: var(--accent-red); }
+
+        .status-name {
+            font-size: 13px;
+            color: var(--text-dark);
+            flex: 1;
+        }
+
+        .status-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* 推荐卡片 */
+        .recommend-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border);
+        }
+
+        .recommend-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recommend-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .recommend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .recommend-item:hover {
+            background: #CCE6FF;
+        }
+
+        .rec-icon {
+            font-size: 18px;
+        }
+
+        .rec-name {
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            
+            .scene-panel, .data-panel {
+                width: 100%;
+            }
+            
+            .chat-panel {
+                max-width: 100%;
+            }
+        }
+
+        /* 地图卡片 */
+        .map-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 12px 0;
+            border: 1px solid var(--border);
+        }
+
+        .map-header {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .map-body {
+            height: 120px;
+            background: linear-gradient(180deg, #E6F3FF, #CCE6FF);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .map-placeholder {
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        /* 服务区列表 */
+        .service-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .service-tag {
+            padding: 6px 12px;
+            background: var(--border);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-dark);
+        }
+
+        .service-tag.highlight {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        /* 景点卡片 */
+        .attraction-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .attraction-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .attr-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: var(--border);
+            border-radius: 8px;
+        }
+
+        .attr-icon {
+            font-size: 28px;
+        }
+
+        .attr-info h4 {
+            font-size: 13px;
+            color: var(--text-dark);
+        }
+
+        .attr-info p {
+            font-size: 11px;
+            color: var(--text);
+        }
+
+        /* 停车信息卡片 */
+        .parking-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            border: 1px solid var(--border);
+        }
+
+        .parking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .parking-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .parking-status {
+            padding: 4px 12px;
+            background: var(--accent-green);
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .parking-stats {
+            display: flex;
+            gap: 16px;
+        }
+
+        .park-stat {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            background: var(--border);
+            border-radius: 8px;
+        }
+
+        .park-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .park-stat-label {
+            font-size: 11px;
+            color: var(--text);
+            margin-top: 4px;
+        }
+
+        /* 餐饮推荐 */
+        .food-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 0;
+            border: 1px solid var(--border);
+        }
+
+        .food-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+        }
+
+        .food-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .food-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--border);
+            border-radius: 10px;
+        }
+
+        .food-icon {
+            font-size: 24px;
+        }
+
+        .food-info {
+            flex: 1;
+        }
+
+        .food-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .food-desc {
+            font-size: 11px;
+            color: var(--text);
+        }
+
+        .food-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-orange);
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面标题 -->
+    <div class="page-title">
+        <h1>🚗 高速公路服务区智能问答系统</h1>
+        <p>为游客提供实时服务查询、路线导航、停车指引、餐饮推荐等智能服务</p>
+    </div>
+
+    <!-- 主布局 -->
+    <div class="main-layout">
+        <!-- 左侧场景面板 -->
+        <div class="scene-panel">
+            <h2>📋 问答场景</h2>
+            <div class="scene-list">
+                <div class="scene-item active" onclick="switchScene(0)">
+                    <span class="scene-icon">🚗</span>
+                    <div class="scene-info">
+                        <h3>路线导航</h3>
+                        <p>查询最优路线与服务区</p>
+                    </div>
+                </div>
+                <div class="scene-item" onclick="switchScene(1)">
+                    <span class="scene-icon">🅿️</span>
+                    <div class="scene-info">
+                        <h3>停车查询</h3>
+                        <p>实时车位与停车指引</p>
+                    </div>
+                </div>
+                <div class="scene-item" onclick="switchScene(2)">
+                    <span class="scene-icon">🍽️</span>
+                    <div class="scene-info">
+                        <h3>餐饮推荐</h3>
+                        <p>美食推荐与价格查询</p>
+                    </div>
+                </div>
+                <div class="scene-item" onclick="switchScene(3)">
+                    <span class="scene-icon">⛽</span>
+                    <div class="scene-info">
+                        <h3>加油服务</h3>
+                        <p>油价查询与加油站导航</p>
+                    </div>
+                </div>
+                <div class="scene-item" onclick="switchScene(4)">
+                    <span class="scene-icon">🏞️</span>
+                    <div class="scene-info">
+                        <h3>景点推荐</h3>
+                        <p>周边景点与游玩攻略</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中间对话区 -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-title">
+                    <div class="chat-avatar">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                    </div>
+                    <div>
+                        <h2>智能问答助手</h2>
+                        <p>实时为您解答服务区相关问题</p>
+                    </div>
+                </div>
+                <button class="demo-btn" onclick="startDemo()">▶ 开始演示</button>
+            </div>
+
+            <div class="chat-area" id="chatArea">
+                <div class="message ai">
+                    <div class="ai-header">
+                        <div class="ai-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                        </div>
+                        <span class="ai-label">智能助手</span>
+                    </div>
+                    <div class="bubble">
+                        👋 您好！我是高速公路服务区智能问答助手。<br><br>
+                        我可以帮助您：<br>
+                        • 🚗 查询最优路线与沿途服务区<br>
+                        • 🅿️ 实时停车位查询<br>
+                        • 🍽️ 餐饮美食推荐<br>
+                        • ⛽ 加油站油价查询<br>
+                        • 🏞️ 周边景点游玩攻略<br><br>
+                        请点击左侧场景或下方快捷按钮开始提问！
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-questions">
+                <div class="q-btn" onclick="askQuestion('从贵阳到都匀怎么走？')">🚗 路线查询</div>
+                <div class="q-btn" onclick="askQuestion('现在停车位还有多少？')">🅿️ 停车查询</div>
+                <div class="q-btn" onclick="askQuestion('有什么好吃的推荐？')">🍽️ 餐饮推荐</div>
+                <div class="q-btn" onclick="askQuestion('附近有什么景点？')">🏞️ 景点推荐</div>
+                <div class="q-btn" onclick="askQuestion('加油站油价多少？')">⛽ 加油查询</div>
+            </div>
+        </div>
+
+        <!-- 右侧数据面板 -->
+        <div class="data-panel">
+            <h2>📊 实时数据</h2>
+            
+            <!-- KPI卡片 -->
+            <div class="kpi-card">
+                <div class="kpi-title">今日服务人数</div>
+                <div class="kpi-value">12,458</div>
+                <div class="kpi-change up">↑ 18.5% 较昨日</div>
+            </div>
+
+            <!-- 统计列表 -->
+            <div class="stat-list">
+                <div class="stat-item">
+                    <span class="stat-label">停车位占用率</span>
+                    <span class="stat-value">68%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">加油站排队</span>
+                    <span class="stat-value">12辆</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">餐厅就餐人数</span>
+                    <span class="stat-value">356人</span>
+                </div>
+            </div>
+
+            <!-- 服务状态 -->
+            <h2 style="margin-top:12px">🔧 服务状态</h2>
+            <div class="service-status">
+                <div class="status-row">
+                    <div class="status-dot green"></div>
+                    <span class="status-name">停车场</span>
+                    <span class="status-value">正常</span>
+                </div>
+                <div class="status-row">
+                    <div class="status-dot green"></div>
+                    <span class="status-name">加油站</span>
+                    <span class="status-value">正常</span>
+                </div>
+                <div class="status-row">
+                    <div class="status-dot yellow"></div>
+                    <span class="status-name">餐厅A</span>
+                    <span class="status-value">繁忙</span>
+                </div>
+                <div class="status-row">
+                    <div class="status-dot green"></div>
+                    <span class="status-name">卫生间</span>
+                    <span class="status-value">正常</span>
+                </div>
+            </div>
+
+            <!-- 热门推荐 -->
+            <h2 style="margin-top:12px">🔥 热门查询</h2>
+            <div class="recommend-card">
+                <div class="recommend-title">📍 最近服务区</div>
+                <div class="recommend-list">
+                    <div class="recommend-item" onclick="askQuestion('都匀服务区详情')">
+                        <span class="rec-icon">🅿️</span>
+                        <span class="rec-name">都匀服务区 (15km)</span>
+                    </div>
+                    <div class="recommend-item" onclick="askQuestion('麻江服务区详情')">
+                        <span class="rec-icon">⛽</span>
+                        <span class="rec-name">麻江服务区 (32km)</span>
+                    </div>
+                    <div class="recommend-item" onclick="askQuestion('福泉服务区详情')">
+                        <span class="rec-icon">🍽️</span>
+                        <span class="rec-name">福泉服务区 (58km)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 场景数据
+        const sceneData = [
+            {
+                title: '路线导航',
+                questions: ['从贵阳到都匀怎么走？', '最近的路线是什么？', '沿途有哪些服务区？']
+            },
+            {
+                title: '停车查询',
+                questions: ['现在停车位还有多少？', '停车场在哪里？', '停车收费标准是什么？']
+            },
+            {
+                title: '餐饮推荐',
+                questions: ['有什么好吃的推荐？', '餐厅营业时间？', '有什么特色菜品？']
+            },
+            {
+                title: '加油服务',
+                questions: ['加油站油价多少？', '附近有加油站吗？', '可以用什么支付方式？']
+            },
+            {
+                title: '景点推荐',
+                questions: ['附近有什么景点？', '都匀有什么好玩的地方？', '怎么去景点？']
+            }
+        ];
+
+        // 路线数据
+        const routeData = {
+            fast: {
+                name: '快速路线（推荐）',
+                dist: '156km',
+                time: '1小时48分',
+                toll: '¥75',
+                services: ['贵阳服务区', '龙里服务区', '麻江服务区', '都匀服务区']
+            },
+            economy: {
+                name: '经济路线',
+                dist: '168km',
+                time: '2小时15分',
+                toll: '¥45',
+                services: ['贵阳服务区', '福泉服务区', '都匀服务区']
+            },
+            scenic: {
+                name: '景观路线',
+                dist: '185km',
+                time: '2小时30分',
+                toll: '¥60',
+                services: ['贵阳服务区', '龙里服务区', '丹寨服务区', '都匀服务区']
+            }
+        };
+
+        // 景点数据
+        const attractions = [
+            { name: '斗篷山景区', icon: '⛰️', desc: '国家级自然保护区', dist: '25km', tags: ['自然风光', '登山'] },
+            { name: '文峰塔', icon: '🏛️', desc: '历史文化遗产', dist: '8km', tags: ['历史', '拍照'] },
+            { name: '茶文化园', icon: '🍵', desc: '贵州茶文化体验', dist: '12km', tags: ['文化', '体验'] },
+            { name: '剑江风景区', icon: '🌊', desc: '城市滨水景观', dist: '5km', tags: ['休闲', '夜景'] }
+        ];
+
+        // 餐饮数据
+        const foodData = [
+            { icon: '🍲', name: '酸汤鱼', desc: '贵州特色，酸辣可口', price: '¥68/份' },
+            { icon: '🍜', name: '牛肉粉', desc: '地道贵州米粉', price: '¥25/碗' },
+            { icon: '🥘', name: '苗家腊肉', desc: '传统腌制风味', price: '¥45/份' },
+            { icon: '🍚', name: '糯米饭', desc: '当地特色主食', price: '¥15/份' }
+        ];
+
+        let currentScene = 0;
+        let isRunning = false;
+
+        // 切换场景
+        function switchScene(index) {
+            currentScene = index;
+            document.querySelectorAll('.scene-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+            
+            // 添加场景切换提示
+            addAIMessage(`已切换至【${sceneData[index].title}】场景，您可以：\n\n${sceneData[index].questions.map(q => '• ' + q).join('\n')}`);
+        }
+
+        // 用户提问
+        function askQuestion(question) {
+            addUserMessage(question);
+            
+            setTimeout(() => {
+                processQuestion(question);
+            }, 800);
+        }
+
+        // 处理问题
+        function processQuestion(question) {
+            if (question.includes('路线') || question.includes('怎么走')) {
+                showRouteInfo();
+            } else if (question.includes('停车')) {
+                showParkingInfo();
+            } else if (question.includes('吃') || question.includes('餐饮') || question.includes('美食')) {
+                showFoodRecommend();
+            } else if (question.includes('加油') || question.includes('油价')) {
+                showGasInfo();
+            } else if (question.includes('景点') || question.includes('好玩')) {
+                showAttractions();
+            } else if (question.includes('服务区详情')) {
+                showServiceDetail(question);
+            }
+        }
+
+        // 显示路线信息
+        function showRouteInfo() {
+            const html = `
+                🚗 为您规划最优路线：
+                
+                <div class="map-card">
+                    <div class="map-header">📍 贵阳 → 都匀 路线规划</div>
+                    <div class="map-body">
+                        <div class="map-placeholder">🗺️ 实时地图导航</div>
+                    </div>
+                </div>
+                
+                <div class="parking-card">
+                    <div class="parking-header">
+                        <span class="parking-title">📊 路线对比</span>
+                    </div>
+                    <div class="parking-stats">
+                        <div class="park-stat">
+                            <div class="park-stat-value">156km</div>
+                            <div class="park-stat-label">快速路线</div>
+                        </div>
+                        <div class="park-stat">
+                            <div class="park-stat-value">1.8h</div>
+                            <div class="park-stat-label">预计时间</div>
+                        </div>
+                        <div class="park-stat">
+                            <div class="park-stat-value">¥75</div>
+                            <div class="park-stat-label">过路费</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-tags">
+                    <div class="service-tag">贵阳服务区</div>
+                    <div class="service-tag">龙里服务区</div>
+                    <div class="service-tag">麻江服务区</div>
+                    <div class="service-tag highlight">都匀服务区</div>
+                </div>
+            `;
+            addAIMessage(html);
+        }
+
+        // 显示停车信息
+        function showParkingInfo() {
+            const html = `
+                🅿️ 都匀服务区停车信息：
+                
+                <div class="parking-card">
+                    <div class="parking-header">
+                        <span class="parking-title">🚗 停车场实时状态</span>
+                        <span class="parking-status">正常运营</span>
+                    </div>
+                    <div class="parking-stats">
+                        <div class="park-stat">
+                            <div class="park-stat-value">320</div>
+                            <div class="park-stat-label">总车位</div>
+                        </div>
+                        <div class="park-stat">
+                            <div class="park-stat-value">102</div>
+                            <div class="park-stat-label">空闲车位</div>
+                        </div>
+                        <div class="park-stat">
+                            <div class="park-stat-value">68%</div>
+                            <div class="park-stat-label">占用率</div>
+                        </div>
+                    </div>
+                </div>
+                
+                📍 停车场位置：服务区北侧，距离入口50米<br>
+                💰 收费标准：小型车 ¥5/小时，大型车 ¥10/小时<br>
+                ⏰ 免费时长：前30分钟免费
+            `;
+            addAIMessage(html);
+        }
+
+        // 显示餐饮推荐
+        function showFoodRecommend() {
+            const html = `
+                🍽️ 都匀服务区美食推荐：
+                
+                <div class="food-card">
+                    <div class="food-title">🔥 特色菜品</div>
+                    <div class="food-grid">
+                        ${foodData.map(f => `
+                            <div class="food-item">
+                                <span class="food-icon">${f.icon}</span>
+                                <div class="food-info">
+                                    <div class="food-name">${f.name}</div>
+                                    <div class="food-desc">${f.desc}</div>
+                                </div>
+                                <div class="food-price">${f.price}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                📍 餐厅位置：服务区综合楼二楼<br>
+                ⏰ 营业时间：07:00 - 22:00<br>
+                💡 推荐就餐时段：11:00-13:00, 17:00-19:00
+            `;
+            addAIMessage(html);
+        }
+
+        // 显示加油信息
+        function showGasInfo() {
+            const html = `
+                ⛽ 都匀服务区加油站信息：
+                
+                <div class="parking-card">
+                    <div class="parking-header">
+                        <span class="parking-title">⛽ 今日油价</span>
+                        <span class="parking-status">正常营业</span>
+                    </div>
+                    <div class="parking-stats">
+                        <div class="park-stat">
+                            <div class="park-stat-value">¥7.89</div>
+                            <div class="park-stat-label">92号汽油</div>
+                        </div>
+                        <div class="park-stat">
+                            <div class="park-stat-value">¥8.45</div>
+                            <div class="park-stat-label">95号汽油</div>
+                        </div>
+                        <div class="park-stat">
+                            <div class="park-stat-value">¥9.12</div>
+                            <div class="park-stat-label">0号柴油</div>
+                        </div>
+                    </div>
+                </div>
+                
+                📍 加油站位置：服务区东侧<br>
+                ⏰ 营业时间：24小时<br>
+                💳 支持方式：现金、微信、支付宝、银行卡<br>
+                🚗 当前排队：约12辆，预计等待5分钟
+            `;
+            addAIMessage(html);
+        }
+
+        // 显示景点推荐
+        function showAttractions() {
+            const html = `
+                🏞️ 都匀周边景点推荐：
+                
+                <div class="attraction-card">
+                    <div class="attraction-grid">
+                        ${attractions.map(a => `
+                            <div class="attr-item">
+                                <span class="attr-icon">${a.icon}</span>
+                                <div class="attr-info">
+                                    <h4>${a.name} (${a.dist})</h4>
+                                    <p>${a.desc} | ${a.tags.join(' · ')}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                💡 游玩建议：<br>
+                • 半日游：文峰塔 + 剑江风景区<br>
+                • 一日游：斗篷山景区 + 茶文化园<br>
+                • 最佳游览时间：上午9:00-11:00，下午15:00-17:00
+            `;
+            addAIMessage(html);
+        }
+
+        // 显示服务区详情
+        function showServiceDetail(name) {
+            const html = `
+                📍 ${name.includes('都匀') ? '都匀服务区' : name.includes('麻江') ? '麻江服务区' : '福泉服务区'}详情：
+                
+                <div class="parking-card">
+                    <div class="parking-header">
+                        <span class="parking-title">📋 服务设施</span>
+                    </div>
+                    <div class="service-tags">
+                        <div class="service-tag">🅿️ 停车场</div>
+                        <div class="service-tag">⛽ 加油站</div>
+                        <div class="service-tag">🍽️ 餐厅</div>
+                        <div class="service-tag">🚻 卫生间</div>
+                        <div class="service-tag">🏪 便利店</div>
+                        <div class="service-tag">☕ 咖啡厅</div>
+                    </div>
+                </div>
+                
+                ✅ 所有设施正常运行<br>
+                📞 服务热线：400-888-6666
+            `;
+            addAIMessage(html);
+        }
+
+        // 添加用户消息
+        function addUserMessage(text) {
+            const chatArea = document.getElementById('chatArea');
+            const msg = document.createElement('div');
+            msg.className = 'message user';
+            msg.innerHTML = `<div class="bubble">${text}</div>`;
+            chatArea.appendChild(msg);
+            scrollToBottom();
+        }
+
+        // 添加AI消息
+        function addAIMessage(html) {
+            const chatArea = document.getElementById('chatArea');
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.innerHTML = `
+                <div class="ai-header">
+                    <div class="ai-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2m-4 9a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1m8 0a1 1 0 00-1 1v1h2v-1a1 1 0 00-1-1z"/></svg>
+                    </div>
+                    <span class="ai-label">智能助手</span>
+                </div>
+                <div class="bubble">${html}</div>
+            `;
+            chatArea.appendChild(msg);
+            scrollToBottom();
+        }
+
+        // 滚动到底部
+        function scrollToBottom() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        // 演示流程
+        async function startDemo() {
+            if (isRunning) return;
+            isRunning = true;
+            
+            // 清空
+            document.getElementById('chatArea').innerHTML = '';
+            
+            addAIMessage('🎬 开始演示高速公路服务区智能问答系统...');
+            
+            await delay(1500);
+            addUserMessage('从贵阳到都匀怎么走？');
+            
+            await delay(1200);
+            showRouteInfo();
+            
+            await delay(2500);
+            addUserMessage('现在停车位还有多少？');
+            
+            await delay(1200);
+            showParkingInfo();
+            
+            await delay(2500);
+            addUserMessage('有什么好吃的推荐？');
+            
+            await delay(1200);
+            showFoodRecommend();
+            
+            await delay(2500);
+            addUserMessage('附近有什么景点？');
+            
+            await delay(1200);
+            showAttractions();
+            
+            await delay(1500);
+            addAIMessage('✅ 演示完成！点击左侧场景或下方快捷按钮可继续体验。');
+            
+            isRunning = false;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>
